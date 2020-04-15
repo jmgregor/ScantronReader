@@ -16,6 +16,7 @@ import csv
 import cv2
 import sys
 import os
+import math
 import numpy as np
 from os import path
 from pdf2image import convert_from_path
@@ -48,7 +49,10 @@ for i, image in enumerate(images):
     image.save('image.png', "PNG")
     img = cv2.imread('image.png',0)
     
-    cimg = cv2.cvtColor(img,cv2.COLOR_GRAY2BGR)
+    # find otsu's threshold value with OpenCV function
+    ret, otsu = cv2.threshold(img,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+    
+    cimg = cv2.cvtColor(otsu,cv2.COLOR_GRAY2BGR)
     
     circles = cv2.HoughCircles(img,cv2.HOUGH_GRADIENT,1,20,
                              param1=50,param2=30,minRadius=4,maxRadius=25)
@@ -56,8 +60,28 @@ for i, image in enumerate(images):
     circles = np.uint16(np.around(circles))
     numbers = 0
     for j in circles[0,:]:
+        
+        csum = 0
+        pixels = 0
+        for angle in range(0, 360, 30):
+            for radius in range(1,j[2]):
+                x=int(radius*math.cos(math.radians(angle)))
+                y=int(radius*math.sin(math.radians(angle)))
+                
+                csum = csum + cimg[j[1]+y,j[0]+x,0]
+                pixels = pixels + 1
+                
+        ave = csum / pixels
+        
+        print(ave)
+        
         # draw the outer circle
-        cv2.circle(cimg,(j[0],j[1]),j[2],(0,255,0),2)
+        if (i==1):
+            cv2.circle(cimg,(j[0],j[1]),j[2],(0,255,0),2)
+        
+        #print(cimg[j[1],j[0]])
+        
+        
         # draw the center of the circle
         #cv2.circle(cimg,(i[0],i[1]),2,(0,0,255),3)
         numbers=numbers+1
@@ -73,7 +97,7 @@ for i, image in enumerate(images):
     ##Save Key
     if (i==0):
         #save key
-        print(i)
+        print("KEY")
     
 
 ##Push data to CSV
