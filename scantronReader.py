@@ -50,37 +50,46 @@ for i, image in enumerate(images):
     img = cv2.imread('image.png',0)
     
     # find otsu's threshold value with OpenCV function
-    ret, otsu = cv2.threshold(img,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+    ret, otsu = cv2.threshold(img,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)    
     
-    cimg = cv2.cvtColor(otsu,cv2.COLOR_GRAY2BGR)
+    blur = cv2.GaussianBlur(otsu,(15,15),0)
+
+    
+    cimg = cv2.cvtColor(img,cv2.COLOR_GRAY2BGR)
     
     circles = cv2.HoughCircles(img,cv2.HOUGH_GRADIENT,1,20,
-                             param1=50,param2=30,minRadius=4,maxRadius=25)
+                             param1=50,param2=30,minRadius=8,maxRadius=30)
 
     circles = np.uint16(np.around(circles))
     numbers = 0
     for j in circles[0,:]:
-        
+
+        #get ave pix in circle        
         csum = 0
-        pixels = 0
-        for angle in range(0, 360, 30):
-            for radius in range(1,j[2]):
-                x=int(radius*math.cos(math.radians(angle)))
-                y=int(radius*math.sin(math.radians(angle)))
-                
-                csum = csum + cimg[j[1]+y,j[0]+x,0]
-                pixels = pixels + 1
-                
+        pixels = 0                
+        for r in range(j[1]-j[2], j[1]+j[2]):
+            for c in range(j[0]-j[2], j[0]+j[2]):
+                dist = math.sqrt((r-j[1])**2 + (c-j[0])**2)
+                    #print("---------")
+                    #print(dist)
+                    #print(j[2])
+                if(dist <= j[2]):
+                    csum = csum + blur[r,c]
+                    pixels = pixels + 1
         ave = csum / pixels
         
-        print(ave)
+        #print(ave)
         
         # draw the outer circle
-        if (i==1):
+        if (ave<150):
+            cv2.circle(cimg,(j[0],j[1]),j[2],(0,0,255),2)
+            print(ave)
+            
+        else:
             cv2.circle(cimg,(j[0],j[1]),j[2],(0,255,0),2)
+
         
         #print(cimg[j[1],j[0]])
-        
         
         # draw the center of the circle
         #cv2.circle(cimg,(i[0],i[1]),2,(0,0,255),3)
@@ -88,9 +97,9 @@ for i, image in enumerate(images):
 
     print(numbers)
 
-    cv2.imshow("image",img)
-    cv2.waitKey(10)
-    cv2.imshow('detected circles',cimg)
+    cv2.namedWindow('Scantron', cv2.WINDOW_NORMAL)
+    cv2.resizeWindow('Scantron', 720, 980)
+    cv2.imshow('Scantron',cimg)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
     
