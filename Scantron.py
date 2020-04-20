@@ -33,7 +33,7 @@ def ScantronGrades(filename):
     blank = cv2.imread('test_documents/blank_scantron.png',0)
     cBlank = cv2.cvtColor(blank,cv2.COLOR_GRAY2BGR)
     #get blank pTransform points
-    endPts = pTransformCoords(blank)
+    #endPts = pTransformCoords(blank)
     
     ##prepare CSV with header
     csv_data = [["Last Name","First Name","University ID","Additional Info","Percentage Correct"]]
@@ -54,20 +54,29 @@ def ScantronGrades(filename):
         bimg = cBlank.copy()
 
         # PERSPECTIVE TRANSFORM of the image to overlay on blank
-        startPts = pTransformCoords(img)
-        matrix = cv2.getPerspectiveTransform(startPts, endPts) 
-        imgTransformed = cv2.warpPerspective(img, matrix, (blank.shape[1],blank.shape[0]))
+        # startPts = pTransformCoords(img)
+        
+        # matrix = cv2.getAffineTransform(startPts, endPts) 
+        # imgTransformed = cv2.warpAffine(img, matrix, (blank.shape[1],blank.shape[0]))        
+        
+        # matrix = cv2.getPerspectiveTransform(startPts, endPts) 
+        # imgTransformed = cv2.warpPerspective(img, matrix, (blank.shape[1],blank.shape[0]))
         
         # PREPROCESSING 
         # otsu --> blur --> 3 channel
-        ret, otsu = cv2.threshold(imgTransformed,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)    
+        ret, otsu = cv2.threshold(img,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)    
         blur = cv2.GaussianBlur(otsu,(15,15),0)
-        cimg = cv2.cvtColor(imgTransformed,cv2.COLOR_GRAY2BGR)
+        cimg = cv2.cvtColor(img,cv2.COLOR_GRAY2BGR)
 
         # HOUGH CIRCLES
-        circles = cv2.HoughCircles(imgTransformed,cv2.HOUGH_GRADIENT,1,20,
+        circles = cv2.HoughCircles(img,cv2.HOUGH_GRADIENT,1,20,
                                   param1=50,param2=30,minRadius=8,maxRadius=30)
         circles = np.uint16(np.around(circles))
+        
+         
+        circlesBlank = cv2.HoughCircles(blank,cv2.HOUGH_GRADIENT,1,20,
+                                  param1=50,param2=30,minRadius=8,maxRadius=30)
+        circlesBlank = np.uint16(np.around(circles))
         
         #print(circles[0])
         lis = circles[0,:]
@@ -167,6 +176,8 @@ def pTransformCoords(img):
     bigCirclesSorted[1], bigCirclesSorted[2] = bigCirclesSorted[2], bigCirclesSorted[1]
     bigCirclesSorted[0] = [r0,c0]
     
+    
+    bigCirclesSorted.pop(2)
     #RETURN as np array for cv2.getPerspectiveTransform
     return np.float32(bigCirclesSorted)
     
