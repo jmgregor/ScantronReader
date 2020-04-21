@@ -40,6 +40,8 @@ def ScantronGrades(filename):
     ##prepare CSV with header
     csv_data = [["Last Name","First Name","University ID","Additional Info","Percentage Correct"]]
     
+    pageNum = 1
+    
     ##Loop through each page in PDF
     for i, image in enumerate(images):
         # READ IN AS IMAGE FOR OPENCV
@@ -127,6 +129,9 @@ def ScantronGrades(filename):
         #APPEND TO CSV
         csv_data.append([last,first,UID,additional,answers])
         
+        print("Page " + str(pageNum) + " completed!")
+        pageNum = pageNum + 1
+        
         # #SHOW CURRENT SHEET            
         # cv2.namedWindow('Scantron', cv2.WINDOW_NORMAL)
         # cv2.resizeWindow('Scantron', 720, 980)
@@ -138,7 +143,7 @@ def ScantronGrades(filename):
     with open('gradedScantrons.csv', 'w', newline='') as csv_output:
         writer = csv.writer(csv_output)
         writer.writerows(csv_data)
-        
+    print("\nCSV saved to: gradedScantrons.csv")
     # remove temp image file
     os.remove('image.png')
     
@@ -210,6 +215,6 @@ def readBubbles(img, numRows, numCols, letters):
 
 
 #MAIN
-filename = "test_documents/filled_scantron.pdf"
+# filename = "test_documents/filled_scantron.pdf"
 
-ScantronGrades(filename)
+# ScantronGrades(filename)

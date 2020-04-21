@@ -18,14 +18,14 @@ def BrowseFiles():
                                                         "*.pdf*"), 
                                                        ("all files", 
                                                         "*.*")))   
-    print(filename + " loaded.")
+    print("Loading file: " + filename)
     return filename
         
 #function to be called when the grading button is pressed
 def ComputeGrades(filename):
     print("\nGrading...\n")
     Scantron.ScantronGrades(filename)
-    print("All done. :)")
+    print("\nAll done!  :)")
 
 
 #create instance of tkinter
