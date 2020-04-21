@@ -18,7 +18,7 @@ def BrowseFiles():
                                                         "*.pdf*"), 
                                                        ("all files", 
                                                         "*.*")))   
-    print("Loading file: " + filename)
+    print("\nLoading file: " + filename)
     return filename
         
 #function to be called when the grading button is pressed

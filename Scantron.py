@@ -110,7 +110,7 @@ def ScantronGrades(filename):
                     row = int(r* 33 + 13)#(height/2))
                     if (boxAns[row, col, 0] == 0 and boxAns[row, col, 1] == 255 and boxAns[row, col, 2] == 0):
                         key.append([row, col])
-                    cv2.circle(boxAns,(col,row),3,(255,0,0),-1)
+                    #cv2.circle(boxAns,(col,row),3,(255,0,0),-1)
                 if (c%15 == 14):
                     change = 92
                 if (c%5 == 4):
@@ -135,7 +135,7 @@ def ScantronGrades(filename):
         # #SHOW CURRENT SHEET            
         # cv2.namedWindow('Scantron', cv2.WINDOW_NORMAL)
         # cv2.resizeWindow('Scantron', 720, 980)
-        # cv2.imshow('Scantron',boxAns)
+        # cv2.imshow('Scantron',bimg)
         # cv2.waitKey(10000)
         # cv2.destroyAllWindows()        
     
@@ -215,7 +215,6 @@ def readBubbles(img, numRows, numCols, letters):
     return word
 
 
-#MAIN
-filename = "test_documents/filled_scantron.pdf"
-
-ScantronGrades(filename)
+# #MAIN
+# filename = "test_documents/filled_scantron.pdf"
+# ScantronGrades(filename)
