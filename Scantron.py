@@ -140,6 +140,7 @@ def ScantronGrades(filename):
         # cv2.destroyAllWindows()        
     
     # SAVE CSV
+    csv_data.pop(1)
     with open('gradedScantrons.csv', 'w', newline='') as csv_output:
         writer = csv.writer(csv_output)
         writer.writerows(csv_data)
@@ -215,6 +216,6 @@ def readBubbles(img, numRows, numCols, letters):
 
 
 #MAIN
-# filename = "test_documents/filled_scantron.pdf"
+filename = "test_documents/filled_scantron.pdf"
 
-# ScantronGrades(filename)
+ScantronGrades(filename)
