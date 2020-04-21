@@ -32,19 +32,13 @@ def ScantronGrades(filename):
     ##read in blank scantron
     blank = cv2.imread('test_documents/blank_scantron.png',0)
     cBlank = cv2.cvtColor(blank,cv2.COLOR_GRAY2BGR)
-    #get blank pTransform points
-    #endPts = pTransformCoords(blank)
+    #HOUGH CIRCLES blank
+    circlesBlank = cv2.HoughCircles(blank,cv2.HOUGH_GRADIENT,1,20,
+                                 param1=50,param2=30,minRadius=10,maxRadius=30)
+    circlesBlank = np.uint16(np.around(circlesBlank))    
     
     ##prepare CSV with header
     csv_data = [["Last Name","First Name","University ID","Additional Info","Percentage Correct"]]
-    
-    # EMPTY LISTS
-    last = []
-    first = []
-    UID = []
-    additional = []
-    answers = []
-    #answers_key = []
     
     ##Loop through each page in PDF
     for i, image in enumerate(images):
@@ -52,43 +46,19 @@ def ScantronGrades(filename):
         image.save('image.png', "PNG")
         img = cv2.imread('image.png',0)
         bimg = cBlank.copy()
-
-        # PERSPECTIVE TRANSFORM of the image to overlay on blank
-        # startPts = pTransformCoords(img)
-        
-        # matrix = cv2.getAffineTransform(startPts, endPts) 
-        # imgTransformed = cv2.warpAffine(img, matrix, (blank.shape[1],blank.shape[0]))        
-        
-        # matrix = cv2.getPerspectiveTransform(startPts, endPts) 
-        # imgTransformed = cv2.warpPerspective(img, matrix, (blank.shape[1],blank.shape[0]))
         
         # PREPROCESSING 
         # otsu --> blur --> 3 channel
         ret, otsu = cv2.threshold(img,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)    
         blur = cv2.GaussianBlur(otsu,(15,15),0)
-        cimg = cv2.cvtColor(img,cv2.COLOR_GRAY2BGR)
+        #cimg = cv2.cvtColor(img,cv2.COLOR_GRAY2BGR)
 
         # HOUGH CIRCLES
         circles = cv2.HoughCircles(img,cv2.HOUGH_GRADIENT,1,20,
-                                  param1=50,param2=30,minRadius=8,maxRadius=30)
+                                  param1=50,param2=30,minRadius=10,maxRadius=30)
         circles = np.uint16(np.around(circles))
         
-         
-        circlesBlank = cv2.HoughCircles(blank,cv2.HOUGH_GRADIENT,1,20,
-                                  param1=50,param2=30,minRadius=8,maxRadius=30)
-        circlesBlank = np.uint16(np.around(circles))
-        
-        #print(circles[0])
-        lis = circles[0,:]
-        circles_sorted = sorted(lis, key=lambda x: (x[0],x[1]))
-        
-        # SAVE KEY
-        if (i==0):
-            key = circles_sorted.copy()  
-            
-        numbers = 0
-        
-        #FIND FILLED BUBBLES
+        #FIND FILLED BUBBLES on answer sheets
         for j in circles[0,:]:
             #get ave pix in circle        
             csum = 0
@@ -96,50 +66,92 @@ def ScantronGrades(filename):
             for r in range(j[1]-j[2], j[1]+j[2]):
                 for c in range(j[0]-j[2], j[0]+j[2]):
                     dist = math.sqrt((r-j[1])**2 + (c-j[0])**2)
-                        #print("---------")
-                        #print(dist)
-                        #print(j[2])
                     if(dist <= j[2]):
                         csum = csum + blur[r,c]
                         pixels = pixels + 1
             ave = csum / pixels
             
-            
-            # print("\n\nUnsorted=\t", j[0], j[1],j[2])
-            # print("Sorted=\t\t",circles_sorted[numbers][0],circles_sorted[numbers][1],circles_sorted[numbers][2])
-            # print("Key=\t\t",key[numbers][0],key[numbers][1],key[numbers][2])
-            
             # draw the outer circle
             if (ave<150):
-                cv2.circle(bimg,(j[0],j[1]),3,(0,255,0),2)
-
-            else:
-                cv2.circle(bimg,(j[0],j[1]),2,(255,0,0),2)
-                
-            numbers=numbers+1
+                k = nearestBlank(circlesBlank, j[0], j[1])
+                cv2.circle(bimg,(k[0],k[1]),k[2],(0,255,0),-1)
     
-        #SHOW CURRENT SHEET            
-        cv2.namedWindow('Scantron', cv2.WINDOW_NORMAL)
-        cv2.resizeWindow('Scantron', 720, 980)
-        cv2.imshow('Scantron',bimg)
-        cv2.waitKey(10000)
-        cv2.destroyAllWindows()
+        #LAST NAME
+        boxLast=bimg[140:995,201:559]
+        last = readBubbles(boxLast, 26, 11, 1)
         
-
+        #FIRST NAME
+        boxFirst=bimg[140:996,655:945]
+        first = readBubbles(boxFirst, 26, 9, 1)
         
+        #UID
+        boxUID=bimg[140:465,1029:1320]
+        UID = readBubbles(boxUID, 10, 9, 0)
     
-    ##Push data to CSV
-    for idx in range(len(last)):
-        csv_data.append([last[idx],first[idx],UID[idx],additional[idx],answers[idx]])
+        #ADDITONAL INFO
+        boxAdd=bimg[605:930,1030:1321]
+        additional = readBubbles(boxAdd, 10, 9, 0)
+
+        #GRADING
+        boxAns=bimg[1079:1902,201:1452]
+        answers = ""
+        
+        # SAVE KEY
+        if (i==0):
+            key = []
+            sections = 30
+            numLetters = 25
+            change = 77
+            col = 13
+            for c in range(0, sections):
+                for r in range(0, numLetters):
+                    row = int(r* 33 + 13)#(height/2))
+                    if (boxAns[row, col, 0] == 0 and boxAns[row, col, 1] == 255 and boxAns[row, col, 2] == 0):
+                        key.append([row, col])
+                    cv2.circle(boxAns,(col,row),3,(255,0,0),-1)
+                if (c%15 == 14):
+                    change = 92
+                if (c%5 == 4):
+                    col = col + change
+                else:
+                    col = col + 33
+        else:
+            correctAns = 0
+            for el in key:
+                row = el[0]
+                col = el[1]
+                if (boxAns[row, col, 0] == 0 and boxAns[row, col, 1] == 255 and boxAns[row, col, 2] == 0):
+                    correctAns = correctAns + 1
+            answers = answers + str(round(100*(correctAns/len(key)),2))
+        
+        #APPEND TO CSV
+        csv_data.append([last,first,UID,additional,answers])
+        
+        # #SHOW CURRENT SHEET            
+        # cv2.namedWindow('Scantron', cv2.WINDOW_NORMAL)
+        # cv2.resizeWindow('Scantron', 720, 980)
+        # cv2.imshow('Scantron',boxAns)
+        # cv2.waitKey(10000)
+        # cv2.destroyAllWindows()        
     
-    ##Output CSV
+    # SAVE CSV
     with open('gradedScantrons.csv', 'w', newline='') as csv_output:
         writer = csv.writer(csv_output)
         writer.writerows(csv_data)
         
-    ##remove temp image file
+    # remove temp image file
     os.remove('image.png')
     
+def nearestBlank(blankCircles, current0, current1):
+    size = 4
+    for j in blankCircles[0,:]:
+        #print(current0," ",current1," ", j[0], " ", j[1]," ", j[2])
+        if(current0 <= j[0]+(j[2]+size) and current0 >= j[0]-(j[2]+size) and current1 <= j[1]+(j[2]+size) and current1 >= j[1]-(j[2]+size)):
+            #print("found")
+            return j
+            
+    return [0,0,0]
+           
 def pTransformCoords(img):
     #FIND UPPER LEFT BUBBLE
     crop = img[0:300,0:300]
@@ -180,9 +192,24 @@ def pTransformCoords(img):
     bigCirclesSorted.pop(2)
     #RETURN as np array for cv2.getPerspectiveTransform
     return np.float32(bigCirclesSorted)
-    
-##prompt for filename of scantron pdf
-#filename = input("Please enter the filename :  ")
+
+def readBubbles(img, numRows, numCols, letters):
+    word = ""
+    width = 33 
+    height = 33 
+    for c in range(0, numCols):
+        col = int(c*width + 13)
+        for r in range(0, numRows):
+            row = int(r* height + 13)
+            if (img[row, col, 0] == 0 and img[row, col, 1] == 255 and img[row, col, 2] == 0):
+                if (letters == 1):
+                    word = word + chr(65 + r)
+                else:
+                    word = word + str(r)
+    return word
+
+
+#MAIN
 filename = "test_documents/filled_scantron.pdf"
 
 ScantronGrades(filename)
