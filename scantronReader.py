@@ -47,7 +47,7 @@ win = tk.Tk()
 #sets the size of the window
 win.geometry("400x200")
 
-photo = tk.PhotoImage(file=r"C:\Users\Aidan Herbert\Desktop\mini3.png")
+photo = tk.PhotoImage(file=r"logo.png")
 label = tk.Label(win,image=photo)
 label.place(x=40,y=0)
 
