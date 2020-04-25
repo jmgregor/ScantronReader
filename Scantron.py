@@ -216,5 +216,5 @@ def readBubbles(img, numRows, numCols, letters):
 
 
 # #MAIN
-# filename = "test_documents/filled_scantron.pdf"
-# ScantronGrades(filename)
+filename = "test_documents/filled_scantron.pdf"
+ScantronGrades(filename)
